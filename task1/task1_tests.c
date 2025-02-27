@@ -192,15 +192,20 @@ void test_chain_broken() {
             ret = syscall(SYS_ANCESTOR_PID, mypid, 0);
             check_test("Broken chain: n==0 (self)", mypid, ret);
 
-            /* Test n == 1: expected to error (-1 with errno ESRCH) because the parent is missing */
+            /* Test n == 1: returns init process */
             errno = 0;
             ret = syscall(SYS_ANCESTOR_PID, mypid, 1);
-            check_test_errno("Broken chain: n==1 (parent missing)", ESRCH, ret);
+            check_test("Broken chain: n==1 (init process)", 1, ret);
 
-            /* Test n == 2: also should error */
+            /* Test n == 2: returns pid 0 */
             errno = 0;
             ret = syscall(SYS_ANCESTOR_PID, mypid, 2);
-            check_test_errno("Broken chain: n==2 (grandparent missing)", ESRCH, ret);
+            check_test("Broken chain: n==2 (pid 0)", 0, ret);
+
+            /* Test n == 3: returns -ESRCH (no such process) */
+            errno = 0;
+            ret = syscall(SYS_ANCESTOR_PID, mypid, 3);
+            check_test_errno("Broken chain: n==3 (no such process)", ESRCH, ret);
 
             /* Signal completion via the pipe */
             if (write(pipefd[1], "done", 4) == -1) {
