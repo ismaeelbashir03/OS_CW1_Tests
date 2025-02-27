@@ -2,14 +2,14 @@
 # input validation
 # ----------------
 if [ "$#" -lt 2 ]; then
-	echo "Usage: $0 <program_name> <cpu1> [cpu2 ...]"
+	echo "Usage: $0 <PID> <cpu1> [cpu2 ...]"
 	exit 1
 fi
 
 # ------------
 # read in args
 # ------------
-program_name="$1"
+PID="$1"
 shift
 
 cpus=("$@")
@@ -19,7 +19,30 @@ cpu_list=${cpu_list:1}
 # --------------------------------
 # execute prgram on specified cpus
 # --------------------------------
-echo "Running program: ${program_name}"
+echo "Checking pid $PID"
 echo "CPUs: $cpu_list"
 
-taskset -c "$cpu_list" ./"$program_name"
+taskset -c "$cpu_list" "$PID"
+
+# Give the process a moment to start running.
+sleep 2
+
+# Monitor the /proc/<PID>/schedstat output over time.
+# An epoch is defined as 10 seconds of runtime.
+# We'll run this loop for 20 seconds to see how the fourth field changes.
+for i in {1..20}; do
+    echo "Iteration $i:"
+    # Read the schedstat file.
+    # The expected format is: "exec_time wait_time timeslices [cpulist]"
+    SCHEDSTAT=$(cat /proc/$PID/schedstat 2>/dev/null)
+    if [ -z "$SCHEDSTAT" ]; then
+        echo "Process $PID has ended."
+        break
+    fi
+    echo "schedstat: $SCHEDSTAT"
+    sleep 1
+done
+
+# Clean up: kill the infinite process.
+kill -9 $PID
+echo "Test complete."
