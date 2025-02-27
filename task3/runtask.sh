@@ -16,9 +16,11 @@ sleep 2
 echo "Monitoring /proc/$PID/schedstat for 35 seconds..."
 CPU_MIN=0
 CPU_MAX=3
+CPU_COMBS=(0 1 2 3 0,1 0,2 0,3 1,2 1,3 2,3 0,1,2 0,1,3 0,2,3 1,2,3 0,1,2,3)
 
 # loop for each combination of CPU bitmask
-for CPU in $(seq $CPU_MIN $CPU_MAX); do
+for CPU in ${CPU_COMBS[@]}; do
+	echo "Monitoring CPU bitmask: $CPU"
 	END=$((SECONDS + 35))
 	MIGRATION_DONE=0
 	while [ $SECONDS -lt $END ]; do
