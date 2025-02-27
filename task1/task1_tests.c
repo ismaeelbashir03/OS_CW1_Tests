@@ -64,8 +64,10 @@ void basic_tests() {
      - n==0 should return its own PID,
      - n==1 should return the child’s PID (its immediate parent),
      - n==2 should return the original (main) process’s PID,
-     - n==3 should return the init process’s PID (PID 1),
-     - n==4 should return -1 with errno ESRCH (exceeds chain).
+     - n==3 should return the bash process’s PID
+     - n==4 should return the login process’s PID
+     - n==5 should return the init process’s PID
+     - n==6 should return -1 with errno ESRCH
 */
 void test_chain_alive() {
     pid_t child_pid, grandchild_pid;
@@ -111,16 +113,25 @@ void test_chain_alive() {
             ret = syscall(SYS_ANCESTOR_PID, mypid, 2);
             check_test("Alive chain: n==2 (grandparent)", original_pid, ret);
 
-            /* Test n == 3: nshould return init process's PID */
+            /* Test n == 3: nshould return the bash process’s PID */
             errno = 0;
-            int init_pid = 1;
             ret = syscall(SYS_ANCESTOR_PID, mypid, 3);
-            check_test("Alive chain: n==3 (init process)", init_pid, ret);
+            check_test("Alive chain: n==3 (bash process)", getppid(), ret);
 
-            /* Tesy n == 4: exceeds chain */
+            /* Test n == 4: should return the login process’s PID */
             errno = 0;
             ret = syscall(SYS_ANCESTOR_PID, mypid, 4);
-            check_test_errno("Alive chain: n==4 (exceeds chain)", ESRCH, ret);
+            check_test("Alive chain: n==4 (login process)", getppid(), ret);
+
+            /* Test n == 5: should return the init process’s PID */
+            errno = 0;
+            ret = syscall(SYS_ANCESTOR_PID, mypid, 5);
+            check_test("Alive chain: n==5 (init process)", 1, ret);
+
+            /* Test n == 6: should error */
+            errno = 0;
+            ret = syscall(SYS_ANCESTOR_PID, mypid, 6);
+            check_test_errno("Alive chain: n==6 (no such process)", ESRCH, ret);
 
             exit(EXIT_SUCCESS);
         } else {
