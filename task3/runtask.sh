@@ -1,55 +1,41 @@
-# ----------------
-# input validation
-# ----------------
-if [ "$#" -lt 2 ]; then
-	echo "Usage: $0 <cpu1> [cpu2 ...]"
-	exit 1
-fi
+#!/bin/bash
+# test_schedstat.sh
+# This script tests the new schedstat functionality.
+# It starts a CPU-bound process, monitors its schedstat output,
+# then forces a CPU migration to observe changes in the CPU bitmask.
 
-# ------------
-# read in args
-# ------------
-# program_name="$1"
-# shift
-
-cpus=("$@")
-cpu_list=$(printf ",%s" "${cpus[@]}")
-cpu_list=${cpu_list:1}
-
-# --------------------------------
-# execute prgram on specified cpus
-# --------------------------------
-echo "Checking pid $PID"
-echo "CPUs: $cpu_list"
-
-# run task if it is not already running
-echo "Process $PID not found."
-./infinite_program &
+echo "Starting a CPU-bound process..."
+( while true; do :; done ) &
 PID=$!
-echo "Launched infinite program with PID: $PID"
+echo "Process started with PID: $PID"
 
-
-taskset -cp "$cpu_list" "$PID"
-
-# Give the process a moment to start running.
+# Give the process a couple of seconds to start running
 sleep 2
 
-# Monitor the /proc/<PID>/schedstat output over time.
-# An epoch is defined as 10 seconds of runtime.
-# We'll run this loop for 20 seconds to see how the fourth field changes.
-for i in {1..20}; do
-    echo "Iteration $i:"
-    # Read the schedstat file.
-    # The expected format is: "exec_time wait_time timeslices [cpulist]"
-    SCHEDSTAT=$(cat /proc/$PID/schedstat 2>/dev/null)
-    if [ -z "$SCHEDSTAT" ]; then
-        echo "Process $PID has ended."
+# Monitor schedstat for 35 seconds (over several epochs)
+echo "Monitoring /proc/$PID/schedstat for 35 seconds..."
+END=$((SECONDS + 35))
+MIGRATION_DONE=0
+
+while [ $SECONDS -lt $END ]; do
+    if [ -e /proc/$PID/schedstat ]; then
+        # Read schedstat and print timestamp and output
+        SCHEDSTAT=$(cat /proc/$PID/schedstat 2>/dev/null)
+        echo "Time $SECONDS sec - schedstat: $SCHEDSTAT"
+
+        # Force migration after 10 seconds
+        if [ $SECONDS -ge 10 ] && [ $MIGRATION_DONE -eq 0 ]; then
+            echo "Forcing process $PID onto CPU 2..."
+            taskset -cp 2 $PID
+            MIGRATION_DONE=1
+        fi
+    else
+        echo "/proc/$PID/schedstat not available."
         break
     fi
-    echo "schedstat: $SCHEDSTAT"
-    sleep 1
+    sleep 2
 done
 
-# Clean up: kill the infinite process.
-kill -9 $PID
-echo "Test complete."
+# Cleanup: terminate the background process
+kill $PID
+echo "Process $PID terminated. Test complete."
