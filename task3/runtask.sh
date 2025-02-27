@@ -2,15 +2,15 @@
 # input validation
 # ----------------
 if [ "$#" -lt 2 ]; then
-	echo "Usage: $0 <program_name> <cpu1> [cpu2 ...]"
+	echo "Usage: $0 <cpu1> [cpu2 ...]"
 	exit 1
 fi
 
 # ------------
 # read in args
 # ------------
-program_name="$1"
-shift
+# program_name="$1"
+# shift
 
 cpus=("$@")
 cpu_list=$(printf ",%s" "${cpus[@]}")
@@ -22,15 +22,14 @@ cpu_list=${cpu_list:1}
 echo "Checking pid $PID"
 echo "CPUs: $cpu_list"
 
-# # run task if it is not already running
-# if [ ! -d /proc/$PID ]; then
-# 	echo "Process $PID not found."
-# 	./infinite_program &
-# 	PID=$!
-# 	echo "Launched infinite program with PID: $PID"
-# fi
+# run task if it is not already running
+echo "Process $PID not found."
+./infinite_program &
+PID=$!
+echo "Launched infinite program with PID: $PID"
 
-taskset -c "$cpu_list" "./$program_name" &
+
+taskset -cp "$cpu_list" "$PID"
 
 # Give the process a moment to start running.
 sleep 2
