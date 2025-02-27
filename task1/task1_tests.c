@@ -17,7 +17,9 @@
 static pid_t original_pid;
 static int tests_failed = 0;
 
-/* Helper: check if a test passes and print result for valid returns */
+/*
+ HELPER FUNCTIONS FOR PRINTING TEST RESULTS
+*/
 void check_test(const char *description, long expected, long actual) {
     if (actual == expected) {
         printf("[PASS] %s\n", description);
@@ -27,9 +29,6 @@ void check_test(const char *description, long expected, long actual) {
     }
 }
 
-/* Helper: check if a test passes for error returns.
-   For error cases, the syscall should return -1 and set errno to the expected error code.
-*/
 void check_test_errno(const char *description, int expected_errno, long ret) {
     if (ret == -1 && errno == expected_errno) {
         printf("[PASS] %s: got -1 and errno set to %d as expected.\n", description, expected_errno);
@@ -39,7 +38,9 @@ void check_test_errno(const char *description, int expected_errno, long ret) {
     }
 }
 
-/* Test basic error conditions in the current process */
+/*
+  BASIC TESTS
+ */
 void basic_tests() {
     long ret;
 
@@ -84,6 +85,7 @@ void test_chain_alive() {
             perror("fork");
             exit(EXIT_FAILURE);
         }
+
         if (grandchild_pid == 0) {
             /* In grandchild process */
             pid_t mypid = getpid();
@@ -160,7 +162,7 @@ void test_chain_broken() {
             /* In grandchild process */
             close(pipefd[0]); // close read end
             /* Sleep briefly to ensure that the immediate parent has exited */
-            sleep(1);
+            sleep(3);
             pid_t mypid = getpid();
             printf("Broken chain grandchild process %d running; original expected parent is dead.\n", mypid);
 
