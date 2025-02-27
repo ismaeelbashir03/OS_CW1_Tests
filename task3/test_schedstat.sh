@@ -8,7 +8,7 @@ core="$1"
 shift
 
 # Launch the CPU-bound process in the background.
-taskset -c $core ./cpu_burn &
+taskset -c $core cpu_burn &
 PID=$!
 echo "Launched CPU-bound process with PID: $PID"
 
