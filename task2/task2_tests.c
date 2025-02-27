@@ -22,7 +22,7 @@
          Child's nice: floor(4/2) = 2
          Grandchild's nice: floor(4/4) = 1
     3. Broken chain test: In a chain where the immediate child exits before propagation,
-       only the parent is updated; the orphaned grandchild (now reparented) should remain unchanged.
+       only the Parent is updated while the orphaned Grandchild (now reparented) should remain unchanged.
 
    To avoid cumulative updates from previous tests, each test resets the parent's (and forked
    children's) nice value to 0 using setpriority(PRIO_PROCESS, 0, 0).
@@ -237,6 +237,15 @@ void test_propagate_nice_broken() {
 }
 
 int main(void) {
+    /* Drop privileges if running as root by switching to a non-root UID (e.g., UID 65534 for "nobody") */
+    if (geteuid() == 0) {
+        if (setuid(65534) != 0) {
+            perror("setuid");
+            exit(EXIT_FAILURE);
+        }
+        printf("Privileges dropped. Running as UID: %d\n", getuid());
+    }
+    
     printf("Starting sys_propagate_nice tests\n");
 
     test_negative_increment();
