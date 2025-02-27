@@ -14,13 +14,13 @@ sleep 2
 
 # Monitor schedstat for 35 seconds (over several epochs)
 echo "Monitoring /proc/$PID/schedstat for 35 seconds..."
-END=$((SECONDS + 35))
-MIGRATION_DONE=0
 CPU_MIN=0
 CPU_MAX=3
 
 # loop for each combination of CPU bitmask
 for CPU in $(seq $CPU_MIN $CPU_MAX); do
+	END=$((SECONDS + 35))
+	MIGRATION_DONE=0
 	while [ $SECONDS -lt $END ]; do
 		if [ -e /proc/$PID/schedstat ]; then
 			# Read schedstat and print timestamp and output
