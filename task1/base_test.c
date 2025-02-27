@@ -1,3 +1,5 @@
+//your gp must be your second child
+
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <stdio.h>
