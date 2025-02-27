@@ -22,6 +22,14 @@ cpu_list=${cpu_list:1}
 echo "Checking pid $PID"
 echo "CPUs: $cpu_list"
 
+# run task if it is not already running
+if [ ! -d /proc/$PID ]; then
+	echo "Process $PID not found."
+	./infinite_program &
+	PID=$!
+	echo "Launched infinite program with PID: $PID"
+fi
+
 taskset -c "$cpu_list" "$PID"
 
 # Give the process a moment to start running.
