@@ -1,8 +1,14 @@
 #!/bin/bash
 # test_schedstat.sh - Test the new epoch tracking in schedstat
 
+# ------------
+# read in args
+# ------------
+core="$1"
+shift
+
 # Launch the CPU-bound process in the background.
-./cpu_burn &
+taskset -c $core ./cpu_burn &
 PID=$!
 echo "Launched CPU-bound process with PID: $PID"
 
