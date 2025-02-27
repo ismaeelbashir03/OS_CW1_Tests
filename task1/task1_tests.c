@@ -64,7 +64,8 @@ void basic_tests() {
      - n==0 should return its own PID,
      - n==1 should return the child’s PID (its immediate parent),
      - n==2 should return the original (main) process’s PID,
-     - n==3 should return -ESRCH (i.e. -1 with errno ESRCH) since our created chain stops.
+     - n==3 should return the init process’s PID (PID 1),
+     - n==4 should return -1 with errno ESRCH (exceeds chain).
 */
 void test_chain_alive() {
     pid_t child_pid, grandchild_pid;
@@ -110,10 +111,16 @@ void test_chain_alive() {
             ret = syscall(SYS_ANCESTOR_PID, mypid, 2);
             check_test("Alive chain: n==2 (grandparent)", original_pid, ret);
 
-            /* Test n == 3: no such ancestor in our chain */
+            /* Test n == 3: nshould return init process's PID */
             errno = 0;
+            int init_pid = 1;
             ret = syscall(SYS_ANCESTOR_PID, mypid, 3);
-            check_test_errno("Alive chain: n==3 (exceeds chain)", ESRCH, ret);
+            check_test("Alive chain: n==3 (init process)", init_pid, ret);
+
+            /* Tesy n == 4: exceeds chain */
+            errno = 0;
+            ret = syscall(SYS_ANCESTOR_PID, mypid, 4);
+            check_test_errno("Alive chain: n==4 (exceeds chain)", ESRCH, ret);
 
             exit(EXIT_SUCCESS);
         } else {
