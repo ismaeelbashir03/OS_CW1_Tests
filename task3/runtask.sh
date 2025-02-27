@@ -16,24 +16,29 @@ sleep 2
 echo "Monitoring /proc/$PID/schedstat for 35 seconds..."
 END=$((SECONDS + 35))
 MIGRATION_DONE=0
+CPU_MIN=0
+CPU_MAX=3
 
-while [ $SECONDS -lt $END ]; do
-    if [ -e /proc/$PID/schedstat ]; then
-        # Read schedstat and print timestamp and output
-        SCHEDSTAT=$(cat /proc/$PID/schedstat 2>/dev/null)
-        echo "Time $SECONDS sec - schedstat: $SCHEDSTAT"
+# loop for each combination of CPU bitmask
+for CPU in $(seq $CPU_MIN $CPU_MAX); do
+	while [ $SECONDS -lt $END ]; do
+		if [ -e /proc/$PID/schedstat ]; then
+			# Read schedstat and print timestamp and output
+			SCHEDSTAT=$(cat /proc/$PID/schedstat 2>/dev/null)
+			echo "Time $SECONDS sec - schedstat: $SCHEDSTAT"
 
-        # Force migration after 10 seconds
-        if [ $SECONDS -ge 10 ] && [ $MIGRATION_DONE -eq 0 ]; then
-            echo "Forcing process $PID onto CPU 2..."
-            taskset -cp 2 $PID
-            MIGRATION_DONE=1
-        fi
-    else
-        echo "/proc/$PID/schedstat not available."
-        break
-    fi
-    sleep 2
+			# Force migration after 10 seconds
+			if [ $SECONDS -ge 10 ] && [ $MIGRATION_DONE -eq 0 ]; then
+				echo "Forcing process $PID onto CPU $CPU..."
+				taskset -cp $CPU $PID
+				MIGRATION_DONE=1
+			fi
+		else
+			echo "/proc/$PID/schedstat not available."
+			break
+		fi
+		sleep 2
+	done
 done
 
 # Cleanup: terminate the background process
