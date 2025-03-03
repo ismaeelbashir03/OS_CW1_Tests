@@ -27,16 +27,16 @@ for CPU in "${CPU_COMBS[@]}"; do
         for single_cpu in "${cpus[@]}"; do
             echo "Setting affinity to CPU $single_cpu for process $PID..."
             taskset -cp "$single_cpu" "$PID"
-            sleep 2
+            sleep 1
         done
     else
         echo "Setting affinity to CPU $CPU for process $PID..."
         taskset -cp "$CPU" "$PID"
-        sleep 2
+        sleep 1
     fi
 
-    # Monitor schedstat for 10 seconds after applying affinity
-    END=$((SECONDS + 10))
+    # Monitor schedstat for 3 seconds after applying affinity
+    END=$((SECONDS + 3))
     while [ $SECONDS -lt $END ]; do
         if [ -e /proc/$PID/schedstat ]; then
             SCHEDSTAT=$(cat /proc/$PID/schedstat 2>/dev/null)
