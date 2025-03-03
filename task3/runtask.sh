@@ -36,15 +36,14 @@ for CPU in "${CPU_COMBS[@]}"; do
     fi
 	sleep 10
 
-    # Monitor schedstat for 10 seconds after applying affinity
+        # Monitor schedstat for 10 seconds after applying affinity
     END=$((SECONDS + 1))
     while [ $SECONDS -lt $END ]; do
         if [ -e /proc/$PID/schedstat ]; then
             SCHEDSTAT=$(cat /proc/$PID/schedstat 2>/dev/null)
             echo "Time $SECONDS sec - schedstat: $SCHEDSTAT"
-			## add check to see that the last column is in format [1] (for multiple its in the format [0-1])
-
-			# Extract the CPU information from the last column (enclosed in square brackets)
+            
+            # Extract the CPU information from the last column (enclosed in square brackets)
             CPU_INFO=$(echo "$SCHEDSTAT" | awk '{print $NF}' | tr -d '[]')
             
             # Verify CPU information matches expected CPU affinity
@@ -67,13 +66,16 @@ for CPU in "${CPU_COMBS[@]}"; do
                 if [[ "$CPU_INFO" == "$EXPECTED_FORMAT" || "$CPU_INFO" == *,* && "$EXPECTED_FORMAT" == *,* ]]; then
                     echo "✓ CPU info matches expected: [$CPU_INFO]"
                 else
-                    # For single CPU, just check the number matches
-					if [[ "$CPU_INFO" == "$CPU" ]]; then
-						echo "✓ CPU info matches expected: [$CPU_INFO]"
-					else
-						echo "✗ CPU info mismatch: got [$CPU_INFO], expected [$CPU] for CPU setting $CPU"
-					fi
+                    echo "✗ CPU info mismatch: got [$CPU_INFO], expected [$EXPECTED_FORMAT] for CPU setting $CPU"
                 fi
+            else
+                # For single CPU, just check the number matches
+                if [[ "$CPU_INFO" == "$CPU" ]]; then
+                    echo "✓ CPU info matches expected: [$CPU_INFO]"
+                else
+                    echo "✗ CPU info mismatch: got [$CPU_INFO], expected [$CPU] for CPU setting $CPU"
+                fi
+            fi
         else
             echo "/proc/$PID/schedstat not available."
             break
