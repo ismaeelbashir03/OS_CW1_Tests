@@ -42,6 +42,38 @@ for CPU in "${CPU_COMBS[@]}"; do
         if [ -e /proc/$PID/schedstat ]; then
             SCHEDSTAT=$(cat /proc/$PID/schedstat 2>/dev/null)
             echo "Time $SECONDS sec - schedstat: $SCHEDSTAT"
+			## add check to see that the last column is in format [1] (for multiple its in the format [0-1])
+
+			# Extract the CPU information from the last column (enclosed in square brackets)
+            CPU_INFO=$(echo "$SCHEDSTAT" | awk '{print $NF}' | tr -d '[]')
+            
+            # Verify CPU information matches expected CPU affinity
+            if [[ "$CPU" == *,* ]]; then
+                # For multi-CPU combinations, validate the format with comma or range notation
+                # Convert current CPU into expected format for comparison
+                EXPECTED_CPUS=$(echo "$CPU" | tr ',' ' ' | tr ' ' '\n' | sort -n | uniq)
+                FIRST_CPU=$(echo "$EXPECTED_CPUS" | head -n 1)
+                LAST_CPU=$(echo "$EXPECTED_CPUS" | tail -n 1)
+                
+                # Check if continuous range or comma-separated list
+                if [[ $(echo "$EXPECTED_CPUS" | wc -l) -eq $((LAST_CPU - FIRST_CPU + 1)) ]]; then
+                    # Continuous range
+                    EXPECTED_FORMAT="${FIRST_CPU}-${LAST_CPU}"
+                else
+                    # Non-continuous range, should be comma-separated
+                    EXPECTED_FORMAT=$(echo "$EXPECTED_CPUS" | tr '\n' ',' | sed 's/,$//')
+                fi
+                
+                if [[ "$CPU_INFO" == "$EXPECTED_FORMAT" || "$CPU_INFO" == *,* && "$EXPECTED_FORMAT" == *,* ]]; then
+                    echo "✓ CPU info matches expected: [$CPU_INFO]"
+                else
+                    # For single CPU, just check the number matches
+					if [[ "$CPU_INFO" == "$CPU" ]]; then
+						echo "✓ CPU info matches expected: [$CPU_INFO]"
+					else
+						echo "✗ CPU info mismatch: got [$CPU_INFO], expected [$CPU] for CPU setting $CPU"
+					fi
+                fi
         else
             echo "/proc/$PID/schedstat not available."
             break
