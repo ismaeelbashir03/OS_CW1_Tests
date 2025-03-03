@@ -32,7 +32,7 @@ for CPU in "${CPU_COMBS[@]}"; do
         echo "Setting affinity to CPU $CPU for process $PID..."
         taskset -cp "$CPU" "$PID"
     fi
-	sleep 10
+	sleep 11
 
     # Monitor schedstat for 10 seconds after applying affinity
     END=$((SECONDS + 1))
